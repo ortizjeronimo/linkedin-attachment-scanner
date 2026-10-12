@@ -1,0 +1,15 @@
+name: Feature or detection request
+description: Suggest a new check, file type or behaviour
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What should the extension do that it doesn't today
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it matters
+      description: For a new detection, a reference to the technique or a public write-up is very helpful.

@@ -1,0 +1,40 @@
+name: Bug report
+description: Something doesn't work, or a file got the wrong verdict
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If this is a security problem (for example a dangerous file reported as clean in a way an attacker could rely on), please report it privately instead: see SECURITY.md.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you got instead.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      options:
+        - Status line or dialog in LinkedIn chats
+        - Download safety net
+        - Wrong verdict for a file
+        - Open in Google Drive
+        - Settings or popup
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Extension and Firefox version
+      placeholder: "Extension 0.2.0, Firefox 140"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Extra details
+      description: For a wrong verdict, the file type and what the scan reported. For a missing status line, the attachment card's HTML helps. Don't attach live malware.
