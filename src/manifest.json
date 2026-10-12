@@ -1,0 +1,61 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Attachment Scanner",
+  "version": "0.2.0",
+  "description": "Checks files sent in LinkedIn chats for macros, scripts, disguised executables and other red flags before you open them.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "linkedin-attachment-scanner@local",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "none"
+        ]
+      }
+    }
+  },
+  "icons": {
+    "48": "icons/shield.svg",
+    "96": "icons/shield.svg"
+  },
+  "permissions": [
+    "downloads",
+    "storage",
+    "notifications",
+    "identity"
+  ],
+  "host_permissions": [
+    "*://*.linkedin.com/*",
+    "*://*.licdn.com/*",
+    "https://www.virustotal.com/*",
+    "https://www.googleapis.com/*"
+  ],
+  "background": {
+    "scripts": [
+      "analyzer.js",
+      "background.js"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.linkedin.com/*"
+      ],
+      "js": [
+        "render.js",
+        "content.js"
+      ],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "action": {
+    "default_title": "LinkedIn Attachment Scanner",
+    "default_icon": "icons/shield.svg",
+    "default_popup": "popup.html"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  }
+}

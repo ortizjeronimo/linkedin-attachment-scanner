@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # Reused by release.yml so a release always passes the same gates as a pull request.
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  WEB_EXT_VERSION: "8"
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check
+        run: |
+          for f in src/*.js test/*.js; do
+            node --check "$f"
+          done
+      - name: Validate manifest
+        run: jq -e '.manifest_version == 3 and (.version | test("^[0-9]+[.][0-9]+[.][0-9]+$"))' src/manifest.json
+      - name: web-ext lint
+        run: npx --yes "web-ext@${WEB_EXT_VERSION}" lint --source-dir src --warnings-as-errors
+
+  test:
+    name: Test (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Analyzer checks
+        run: node test/analyzer.test.js
+
+  build:
+    name: Build
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Package extension
+        run: npx --yes "web-ext@${WEB_EXT_VERSION}" build --source-dir src --artifacts-dir dist
+      - name: Checksum
+        run: cd dist && sha256sum -- *.zip | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension
+          path: dist/*.zip
+          if-no-files-found: error
+          retention-days: 30

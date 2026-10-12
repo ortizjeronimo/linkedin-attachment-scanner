@@ -1,0 +1,23 @@
+# web-ext build output and signing state
+web-ext-artifacts/
+.web-extension-id
+.amo-upload-uuid
+*.xpi
+*.zip
+
+# Node (only used for npx web-ext)
+node_modules/
+npm-debug.log*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# CI / release output
+dist/
+signed/
+trivy.sarif
+sbom.raw.json

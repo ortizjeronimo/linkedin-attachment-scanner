@@ -1,0 +1,107 @@
+name: Release
+
+# Push a tag like v0.2.0 (matching "version" in src/manifest.json) to publish a GitHub release
+# with the packaged extension, its SBOM, checksums and signed build provenance.
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  TRIVY_IMAGE: aquasec/trivy:0.75.0
+  WEB_EXT_VERSION: "8"
+
+jobs:
+  check-tag:
+    name: Tag matches manifest version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        run: |
+          version="$(jq -r .version src/manifest.json)"
+          if [ "v${version}" != "${GITHUB_REF_NAME}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match manifest version ${version}"
+            exit 1
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+  ci:
+    name: CI
+    needs: check-tag
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    name: Publish GitHub release
+    needs: [check-tag, ci]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write      # create the release
+      id-token: write      # sign the attestations
+      attestations: write  # store the attestations
+    env:
+      VERSION: ${{ needs.check-tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the package built by CI
+        uses: actions/download-artifact@v4
+        with:
+          name: extension
+          path: dist
+      - name: Generate SBOM (CycloneDX)
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src "$TRIVY_IMAGE" fs --quiet \
+            --format cyclonedx --output sbom.raw.json src
+          jq --arg v "$VERSION" \
+            '.metadata.component.name = "linkedin-attachment-scanner" | .metadata.component.version = $v' \
+            sbom.raw.json > dist/sbom.cdx.json
+      - name: Checksums
+        run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/*.zip
+      - name: Attest SBOM
+        uses: actions/attest-sbom@v2
+        with:
+          subject-path: dist/*.zip
+          sbom-path: dist/sbom.cdx.json
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
+
+  sign:
+    name: Sign with Mozilla (unlisted)
+    # Opt-in: set the repository variable AMO_SIGN=true and the secrets AMO_JWT_ISSUER and
+    # AMO_JWT_SECRET (from https://addons.mozilla.org/developers/addon/api/key/).
+    if: vars.AMO_SIGN == 'true'
+    needs: release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Sign
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+        run: npx --yes "web-ext@${WEB_EXT_VERSION}" sign --source-dir src --channel unlisted --artifacts-dir signed
+      - name: Attach signed .xpi to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$GITHUB_REF_NAME" signed/*.xpi

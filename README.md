@@ -1,0 +1,114 @@
+# LinkedIn Attachment Scanner (Firefox)
+
+[![CI](https://github.com/ortizjeronimo/linkedin-attachment-scanner/actions/workflows/ci.yml/badge.svg)](https://github.com/ortizjeronimo/linkedin-attachment-scanner/actions/workflows/ci.yml)
+[![Security](https://github.com/ortizjeronimo/linkedin-attachment-scanner/actions/workflows/security.yml/badge.svg)](https://github.com/ortizjeronimo/linkedin-attachment-scanner/actions/workflows/security.yml)
+[![Release](https://img.shields.io/github/v/release/ortizjeronimo/linkedin-attachment-scanner)](https://github.com/ortizjeronimo/linkedin-attachment-scanner/releases/latest)
+[![License: MIT](https://img.shields.io/github/license/ortizjeronimo/linkedin-attachment-scanner)](LICENSE)
+
+Checks files sent to you in LinkedIn messages **before** they reach your Downloads folder.
+
+## What it does
+
+- **In chats:** every attachment is scanned automatically as soon as it appears, and a status line under the card shows the result: *No threats found*, *Review before opening*, or *Dangerous file*. Clean files download with one click as usual; anything else opens a details dialog first.
+- **Toolbar popup:** lists recent scans and has an on/off switch for automatic scanning.
+- **Safety net:** any other download coming from linkedin.com or licdn.com is paused and scanned. Dangerous files are cancelled and explained in a new tab. If a small file finished before the scan, you're offered to delete it.
+- **Open in Google Drive (optional):** view an attachment in Google's online viewer instead of opening it on your computer. See [setup](#open-in-google-drive) below.
+- **Privacy:** every check runs locally. With a VirusTotal key set, only the file's SHA-256 fingerprint is sent, never the file. A file is uploaded to Google Drive only when you click **Open in Google Drive** for it.
+
+## What it detects
+
+| Category | Checks |
+|---|---|
+| Office (docx/xlsx/pptx) | VBA macros, macros hidden in a non-macro extension, ActiveX, embedded OLE objects, remote template injection, links to network shares |
+| Legacy Office (doc/xls/ppt) | VBA macros, Excel 4.0 macros, Equation Editor exploits, packaged objects, password protection |
+| PDF | JavaScript (including hex-obfuscated names and compressed object streams), Launch actions, embedded files, auto-run actions, XFA/Flash, form submission, list of link domains |
+| RTF | Embedded objects, auto-updating objects, Equation Editor references |
+| Disguises | Real executables or shortcuts named as documents, double extensions (`cv.pdf.exe`), right-to-left override tricks, padded filenames, type/extension mismatch |
+| Archives | Password protection, executables inside, nested archives, one level of nested Office files. RAR/7z are flagged as not inspectable. |
+| HTML/SVG | Scripts, HTML smuggling, password fields, forms posting elsewhere |
+
+## Install (for testing)
+
+1. Clone or download this repository.
+2. Open `about:debugging#/runtime/this-firefox` in Firefox 140 or newer.
+3. Click **Load Temporary Add-on…** and pick `src/manifest.json`.
+4. Open LinkedIn messaging and click an attachment.
+
+Temporary add-ons are removed when Firefox restarts. To install permanently, sign it for free as an unlisted add-on at https://addons.mozilla.org/developers/ (`npx web-ext sign --source-dir src --channel=unlisted`), then install the signed `.xpi`.
+
+Click the toolbar icon to open settings (VirusTotal key, safety-net options).
+
+## Open in Google Drive
+
+This is off until you give the extension your own Google OAuth client ID (free, about ten minutes):
+
+1. In the [Google Cloud console](https://console.cloud.google.com/), create a project and enable the **Google Drive API**.
+2. Configure the OAuth consent screen and add the scope `https://www.googleapis.com/auth/drive.file`. While the app is in "Testing", add your own Google account as a test user.
+3. Create an **OAuth client ID** of type **Web application**. Under **Authorised redirect URIs**, add the address shown in the extension's settings (it looks like `http://127.0.0.1/mozoauth2/…`).
+4. Paste the client ID into the extension's settings and save.
+
+Scan results then show an **Open in Google Drive** button. The first use opens a Google sign-in window. The file is uploaded to your Drive (it stays there until you delete it) and opened in Google's viewer in a new tab; nothing is saved to your Downloads folder. The `drive.file` scope only lets the extension see files it uploaded itself.
+
+## Development
+
+The extension is plain JavaScript with no build step. Everything Firefox loads lives in `src/`.
+
+```
+src/
+  manifest.json
+  background.js   download safety net, scan orchestration, VirusTotal lookup
+  analyzer.js     file format checks (runs in the background page)
+  content.js      LinkedIn page integration
+  render.js       result rendering shared by the page dialog and warning tab
+  popup.html/js   toolbar popup
+  options.html/js settings page
+  warning.html/js tab shown when a download is blocked
+  icons/
+test/
+  analyzer.test.js  crafted files and the verdict each must get
+```
+
+With Node.js installed, [web-ext](https://extensionworkshop.com/documentation/develop/getting-started-with-web-ext/) covers the usual tasks:
+
+```
+npx web-ext run   --source-dir src   # launch Firefox with the extension loaded, reloads on change
+npx web-ext lint  --source-dir src   # validate the manifest and code
+npx web-ext build --source-dir src   # package a zip into web-ext-artifacts/
+```
+
+The analyzer has a test file of crafted documents, each with the verdict it must get:
+
+```
+node test/analyzer.test.js
+```
+
+## CI/CD
+
+Three GitHub Actions workflows live in `.github/workflows/`:
+
+| Workflow | Runs on | What it does |
+|---|---|---|
+| `ci.yml` | every push and pull request | Syntax check, manifest validation, `web-ext lint` (warnings fail the build), analyzer tests on Node 20, 22 and 24, then packages the extension and uploads it with its SHA-256 |
+| `security.yml` | every push and pull request, and weekly | Gitleaks over the full git history, Trivy (dependencies, secrets, misconfigurations, licences; fails on HIGH or CRITICAL), CodeQL static analysis. Trivy and CodeQL results appear under the repository's **Security → Code scanning** tab |
+| `release.yml` | a tag like `v0.2.0` | Checks the tag matches the manifest version, reruns CI, then publishes a GitHub release with the package, a CycloneDX SBOM, `SHA256SUMS`, and signed build-provenance and SBOM attestations |
+
+To cut a release, bump `version` in `src/manifest.json`, commit, then `git tag v<version> && git push --tags`. Anyone can verify a downloaded package with `gh attestation verify <file>.zip --repo ortizjeronimo/linkedin-attachment-scanner`.
+
+Signing with Mozilla is opt-in: set the repository variable `AMO_SIGN=true` and the secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET`, and the release also gets a signed `.xpi`.
+
+Dependabot (`.github/dependabot.yml`) opens weekly pull requests to keep the actions up to date.
+
+## Limitations
+
+- LinkedIn changes its page markup often. If the status line stops appearing, the download safety net still catches the file; adjust `isAttachmentLink()` and `BUTTON_SEL` in `content.js`.
+- LinkedIn's current attachment card is a button with no file address, so those attachments are scanned when you click **Download** or **Scan now** instead of automatically. To scan one, the extension lets LinkedIn start the download, cancels it, and scans its own copy.
+- This is a heuristic scanner, not antivirus. A file with no red flags can still be malicious, especially with VirusTotal off or for a brand-new file.
+- Contents of RAR and 7z archives and encrypted files can't be inspected.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the checks to run before a pull request, and how the SBOM (`sbom.cdx.json`) is generated.
+
+## License
+
+[MIT](LICENSE)

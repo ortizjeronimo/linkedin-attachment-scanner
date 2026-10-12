@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>LinkedIn Attachment Scanner settings</title>
+  <style>
+    body { font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; color: #101828; margin: 0; padding: 16px; max-width: 560px; }
+    h2 { font-size: 15px; margin: 18px 0 6px; }
+    p { margin: 4px 0 8px; color: #475467; }
+    input[type=password], input[type=text] { width: 100%; box-sizing: border-box; padding: 7px 9px; border: 1px solid #d0d5dd; border-radius: 6px; font: inherit; }
+    label { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
+    .row { display: flex; gap: 8px; margin-top: 8px; align-items: center; flex-wrap: wrap; }
+    button { font: inherit; padding: 6px 14px; border-radius: 999px; border: 1px solid #0a66c2; background: #0a66c2; color: #fff; cursor: pointer; }
+    button.secondary { background: transparent; color: #0a66c2; }
+    #status { color: #067647; }
+    a { color: #0a66c2; }
+    @media (prefers-color-scheme: dark) { body { color: #f2f4f7; background: #1d2939; } p { color: #d0d5dd; } input[type=password], input[type=text] { background: #101828; color: #f2f4f7; border-color: #475467; } }
+  </style>
+</head>
+<body>
+  <h2>VirusTotal lookup (optional)</h2>
+  <p>Only the file's SHA-256 fingerprint is sent to VirusTotal, never the file itself. Get a free API key from your <a href="https://www.virustotal.com/gui/my-apikey" target="_blank" rel="noopener">VirusTotal account</a>. Free keys allow 4 lookups per minute.</p>
+  <input type="password" id="vtApiKey" placeholder="Paste your VirusTotal API key" autocomplete="off">
+  <div class="row"><button class="secondary" id="test">Test key</button><span id="testResult"></span></div>
+
+  <h2>Open in Google Drive (optional)</h2>
+  <p>Adds an "Open in Google Drive" button to scan results. The file is uploaded to your own Google Drive and shown in Google's viewer, so it is never opened on this computer. The extension can only see files it uploaded itself, not the rest of your Drive, and nothing is uploaded unless you click the button.</p>
+  <p>Create an OAuth client ID of type "Web application" in the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloud console</a> with the Google Drive API enabled, and add this as an authorised redirect URI:</p>
+  <input type="text" id="driveRedirect" readonly>
+  <p></p>
+  <input type="text" id="driveClientId" placeholder="Paste your Google OAuth client ID" autocomplete="off">
+
+  <h2>Behaviour</h2>
+  <label><input type="checkbox" id="watchAllDownloads"> <span>Also check every download that comes from LinkedIn, not just files clicked in chats. Dangerous files are stopped and explained in a new tab.</span></label>
+  <label><input type="checkbox" id="blockOnCaution"> <span>Stop downloads marked "Be careful" too, not only "Dangerous".</span></label>
+
+  <div class="row"><button id="save">Save</button><span id="status"></span></div>
+  <script src="options.js"></script>
+</body>
+</html>

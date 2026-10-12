@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Attachment Scanner</title>
+  <style>
+    :root { --fg: #191919; --muted: #666; --line: #e8e8e8; --bg: #fff; --hover: #f3f6f8; --blue: #0a66c2;
+      --clean: #057642; --caution: #915907; --suspicious: #b24020; }
+    @media (prefers-color-scheme: dark) {
+      :root { --fg: #e9e9e9; --muted: #a8a8a8; --line: #38434f; --bg: #1b1f23; --hover: #262c31; --blue: #71b7fb;
+        --clean: #7fd1a1; --caution: #f2c46b; --suspicious: #f6a28c; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; width: 360px; font: 13px/1.4 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; color: var(--fg); background: var(--bg); }
+    header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+    header img { width: 28px; height: 28px; }
+    h1 { font-size: 14px; margin: 0; }
+    .tag { color: var(--muted); font-size: 12px; }
+    .toggle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+    .toggle span { font-weight: 600; } .toggle small { display: block; color: var(--muted); font-weight: 400; }
+    .switch { position: relative; width: 36px; height: 20px; flex: none; }
+    .switch input { opacity: 0; width: 100%; height: 100%; margin: 0; position: absolute; cursor: pointer; z-index: 1; }
+    .switch i { position: absolute; inset: 0; background: #b5b5b5; border-radius: 999px; transition: background .15s; }
+    .switch i::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; }
+    .switch input:checked + i { background: var(--blue); }
+    .switch input:checked + i::after { transform: translateX(16px); }
+    .switch input:focus-visible + i { outline: 2px solid var(--blue); outline-offset: 2px; }
+    h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 12px 16px 4px; display: flex; justify-content: space-between; }
+    h2 button { all: unset; cursor: pointer; color: var(--blue); text-transform: none; letter-spacing: 0; font-weight: 600; }
+    ul { list-style: none; margin: 0; padding: 0 0 6px; max-height: 320px; overflow: auto; }
+    li { display: flex; gap: 10px; padding: 8px 16px; align-items: flex-start; }
+    li:hover { background: var(--hover); }
+    .dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; flex: none; }
+    .name { font-weight: 600; word-break: break-all; }
+    .meta { color: var(--muted); font-size: 12px; }
+    .clean .dot { background: var(--clean); } .caution .dot { background: var(--caution); } .suspicious .dot { background: var(--suspicious); }
+    .clean .v { color: var(--clean); } .caution .v { color: var(--caution); } .suspicious .v { color: var(--suspicious); }
+    .empty { color: var(--muted); padding: 16px; text-align: center; }
+    footer { border-top: 1px solid var(--line); padding: 10px 16px; display: flex; justify-content: space-between; align-items: center; }
+    footer a { color: var(--blue); font-weight: 600; text-decoration: none; cursor: pointer; }
+    #vt { color: var(--muted); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="icons/shield.svg" alt="">
+    <div><h1>Attachment Scanner</h1><div class="tag">Protecting your LinkedIn messages</div></div>
+  </header>
+  <label class="toggle">
+    <span>Scan attachments automatically<small>Files are checked as soon as they appear in a chat</small></span>
+    <span class="switch"><input type="checkbox" id="autoScan"><i></i></span>
+  </label>
+  <h2>Recent scans <button id="clear" type="button">Clear</button></h2>
+  <ul id="list"></ul>
+  <footer><span id="vt"></span><a id="settings">Settings</a></footer>
+  <script src="popup.js"></script>
+</body>
+</html>
