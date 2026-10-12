@@ -25,7 +25,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - id: version
         run: |
           version="$(jq -r .version src/manifest.json)"
@@ -52,9 +52,9 @@ jobs:
     env:
       VERSION: ${{ needs.check-tag.outputs.version }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Download the package built by CI
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: extension
           path: dist
@@ -67,7 +67,7 @@ jobs:
             sbom.raw.json > dist/sbom.cdx.json
       - name: Checksums
         run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3.9.1
       - name: Sign package with cosign (keyless)
         # Signed with this workflow's short-lived OIDC identity, so there is no key to store or leak.
         run: |
@@ -75,11 +75,11 @@ jobs:
             cosign sign-blob --yes --bundle "${f}.sigstore.json" "$f"
           done
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v4
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
         with:
           subject-path: dist/*.zip
       - name: Attest SBOM
-        uses: actions/attest-sbom@v4
+        uses: actions/attest-sbom@c604332985a26aa8cf1bdc465b92731239ec6b9e # v4.1.0
         with:
           subject-path: dist/*.zip
           sbom-path: dist/sbom.cdx.json
@@ -90,17 +90,19 @@ jobs:
 
   publish-amo:
     name: Submit to addons.mozilla.org (listed)
-    # Opt-in: set the repository variable AMO_SIGN=true and the secrets AMO_JWT_ISSUER and
-    # AMO_JWT_SECRET (from https://addons.mozilla.org/developers/addon/api/key/). The first
+    # Opt-in: set the repository variable AMO_SIGN=true and, in the "mozilla" environment, the
+    # secrets AMO_JWT_ISSUER and AMO_JWT_SECRET (from https://addons.mozilla.org/developers/addon/api/key/). The first
     # version has to be submitted by hand on the site so the listing exists; this uploads
     # later versions to it, where Mozilla signs and publishes them.
     if: vars.AMO_SIGN == 'true'
     needs: release
+    # The Mozilla credentials live in this environment, which requires approval and only accepts v* tags.
+    environment: mozilla
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
       - name: Submit
