@@ -14,14 +14,28 @@ const DEFAULTS = { vtApiKey: "", watchAllDownloads: true, blockOnCaution: false,
 })();
 
 $("save").addEventListener("click", async () => {
+  const vtApiKey = $("vtApiKey").value.trim();
+  const driveClientId = $("driveClientId").value.trim();
+  // Both optional features send data off this device, so Firefox asks the user to allow it.
+  // This has to be the first await: the prompt only appears from a user action.
+  // Keep the data types in sync with background.js and data_collection_permissions in manifest.json.
+  const wanted = [...(vtApiKey || driveClientId ? ["websiteContent"] : []), ...(driveClientId ? ["personalCommunications"] : [])];
+  let allowed = true;
+  if (wanted.length) {
+    try { allowed = await browser.permissions.request({ data_collection: wanted }); } catch (_) { allowed = false; }
+  }
   await browser.storage.local.set({
-    vtApiKey: $("vtApiKey").value.trim(),
-    driveClientId: $("driveClientId").value.trim(),
+    vtApiKey,
+    driveClientId,
     watchAllDownloads: $("watchAllDownloads").checked,
     blockOnCaution: $("blockOnCaution").checked
   });
-  $("status").textContent = "Saved.";
-  setTimeout(() => ($("status").textContent = ""), 2000);
+  if (allowed) {
+    $("status").textContent = "Saved.";
+    setTimeout(() => ($("status").textContent = ""), 2000);
+  } else {
+    $("status").textContent = "Saved, but VirusTotal and Google Drive stay off until you allow the data sharing Firefox asked about. Click Save to be asked again.";
+  }
 });
 
 $("test").addEventListener("click", async () => {

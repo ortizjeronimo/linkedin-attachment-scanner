@@ -67,6 +67,13 @@ jobs:
             sbom.raw.json > dist/sbom.cdx.json
       - name: Checksums
         run: cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS
+      - uses: sigstore/cosign-installer@v3
+      - name: Sign package with cosign (keyless)
+        # Signed with this workflow's short-lived OIDC identity, so there is no key to store or leak.
+        run: |
+          for f in dist/*.zip; do
+            cosign sign-blob --yes --bundle "${f}.sigstore.json" "$f"
+          done
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v4
         with:
@@ -81,27 +88,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" dist/* --title "$GITHUB_REF_NAME" --generate-notes --verify-tag
 
-  sign:
-    name: Sign with Mozilla (unlisted)
+  publish-amo:
+    name: Submit to addons.mozilla.org (listed)
     # Opt-in: set the repository variable AMO_SIGN=true and the secrets AMO_JWT_ISSUER and
-    # AMO_JWT_SECRET (from https://addons.mozilla.org/developers/addon/api/key/).
+    # AMO_JWT_SECRET (from https://addons.mozilla.org/developers/addon/api/key/). The first
+    # version has to be submitted by hand on the site so the listing exists; this uploads
+    # later versions to it, where Mozilla signs and publishes them.
     if: vars.AMO_SIGN == 'true'
     needs: release
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - name: Sign
+      - name: Submit
         env:
           WEB_EXT_API_KEY: ${{ secrets.AMO_JWT_ISSUER }}
           WEB_EXT_API_SECRET: ${{ secrets.AMO_JWT_SECRET }}
-        run: npx --yes "web-ext@${WEB_EXT_VERSION}" sign --source-dir src --channel unlisted --artifacts-dir signed
-      - name: Attach signed .xpi to the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$GITHUB_REF_NAME" signed/*.xpi
+        # Don't wait for Mozilla's review; the version appears on the listing once approved.
+        run: npx --yes "web-ext@${WEB_EXT_VERSION}" sign --source-dir src --channel listed --approval-timeout 0

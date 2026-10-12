@@ -32,4 +32,13 @@ Release packages are built by GitHub Actions and carry signed build provenance:
 gh attestation verify linkedin_attachment_scanner-<version>.zip --repo ortizjeronimo/linkedin-attachment-scanner
 ```
 
+From 0.2.2 on, each package is also signed with [cosign](https://docs.sigstore.dev/cosign/) (keyless), and the signature bundle is attached to the release as `<package>.zip.sigstore.json`. To check that a package was produced by this repository's release workflow:
+
+```
+cosign verify-blob linkedin_attachment_scanner-<version>.zip \
+  --bundle linkedin_attachment_scanner-<version>.zip.sigstore.json \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --certificate-identity-regexp '^https://github\.com/ortizjeronimo/linkedin-attachment-scanner/\.github/workflows/release\.yml@refs/tags/v'
+```
+
 Each release also includes `SHA256SUMS` and a CycloneDX SBOM.

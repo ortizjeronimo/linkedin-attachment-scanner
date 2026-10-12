@@ -18,8 +18,20 @@ function isLinkedInUrl(u) {
   try { return LINKEDIN_HOST.test(new URL(u).hostname); } catch (_) { return false; }
 }
 
+// The two optional features send data off this device, so each only counts as switched on once the
+// user has allowed its data types in Firefox (asked when the key is saved in the settings page).
+// Keep these in sync with options.js and data_collection_permissions in manifest.json.
+const DATA_VIRUSTOTAL = ["websiteContent"];
+const DATA_DRIVE = ["websiteContent", "personalCommunications"];
+async function dataAllowed(types) {
+  const p = await browser.permissions.getAll();
+  return !p.data_collection || types.every((t) => p.data_collection.includes(t));
+}
+
 async function getSettings() {
   const s = await browser.storage.local.get({ vtApiKey: "", watchAllDownloads: true, blockOnCaution: false, autoScan: true, driveClientId: "" });
+  if (s.vtApiKey && !(await dataAllowed(DATA_VIRUSTOTAL))) s.vtApiKey = "";
+  if (s.driveClientId && !(await dataAllowed(DATA_DRIVE))) s.driveClientId = "";
   return s;
 }
 
@@ -211,7 +223,7 @@ async function openInDrive(scanId) {
   const p = pending.get(scanId);
   if (!p || !p.bytes) throw new Error("This scan has expired. Please scan the file again.");
   const { driveClientId } = await getSettings();
-  if (!driveClientId) throw new Error("Google Drive isn't set up. Add a client ID in the extension settings.");
+  if (!driveClientId) throw new Error("Google Drive isn't set up, or sharing files with it isn't allowed yet. Open the extension's settings and click Save.");
   const token = await driveAuth(driveClientId);
   const name = p.result.filename.replace(/[‪-‮⁦-⁩]/g, "");
   const mime = DRIVE_MIME[(/\.([a-z0-9]+)$/i.exec(name) || [])[1]?.toLowerCase()] || "application/octet-stream";
