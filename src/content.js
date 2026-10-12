@@ -26,6 +26,10 @@
     }
     return out;
   }
+  // Page-type checks look at the path only, so text elsewhere in a URL (e.g. its query) can't match.
+  function pathOf(url) {
+    try { return new URL(url, location.href).pathname; } catch (_) { return ""; }
+  }
   function hostOk(url) {
     try { return LI_HOST.test(new URL(url, location.href).hostname); } catch (_) { return false; }
   }
@@ -43,7 +47,7 @@
     if (!looksLikeFile && !containerHint) return false;
     const onlyImage = a.querySelector("img") && !a.textContent.trim();
     if (onlyImage && IMAGE_HREF.test(a.href)) return false;
-    if (/linkedin\.com\/(in|company|jobs|feed|posts|school|events|groups)\//i.test(a.href)) return false;
+    if (/^\/(in|company|jobs|feed|posts|school|events|groups)\//i.test(pathOf(a.href))) return false;
     return true;
   }
   function findAttachmentLink(target) {
@@ -58,7 +62,7 @@
     let c = card;
     for (let i = 0; c && i < 5; i++, c = c.parentElement) {
       const x = c.matches("a[href]") ? c : c.querySelector("a[href]");
-      if (x && hostOk(x.href) && !/linkedin\.com\/(in|company)\//i.test(x.href)) return x;
+      if (x && hostOk(x.href) && !/^\/(in|company)\//i.test(pathOf(x.href))) return x;
     }
     return null;
   }
