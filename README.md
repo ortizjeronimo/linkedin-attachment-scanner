@@ -13,7 +13,7 @@ Checks files sent to you in LinkedIn messages **before** they reach your Downloa
 - **Toolbar popup:** lists recent scans and has an on/off switch for automatic scanning.
 - **Safety net:** any other download coming from linkedin.com or licdn.com is paused and scanned. Dangerous files are cancelled and explained in a new tab. If a small file finished before the scan, you're offered to delete it.
 - **Open in Google Drive (optional):** view an attachment in Google's online viewer instead of opening it on your computer. See [setup](#open-in-google-drive) below.
-- **Privacy:** every check runs locally. With a VirusTotal key set, only the file's SHA-256 fingerprint is sent, never the file. A file is uploaded to Google Drive only when you click **Open in Google Drive** for it.
+- **Privacy:** every check runs locally. With a VirusTotal key set, only the file's SHA-256 fingerprint is sent, never the file. A file is uploaded to Google Drive only when you click **Open in Google Drive** for it. Firefox asks for your permission before either feature is switched on. Details are in the [privacy policy](PRIVACY.md).
 
 ## What it detects
 
@@ -90,11 +90,11 @@ Three GitHub Actions workflows live in `.github/workflows/`:
 |---|---|---|
 | `ci.yml` | every push and pull request | Syntax check, manifest validation, `web-ext lint` (warnings fail the build), analyzer tests on Node 20, 22 and 24, then packages the extension and uploads it with its SHA-256 |
 | `security.yml` | every push and pull request, and weekly | Gitleaks over the full git history, Trivy (dependencies, secrets, misconfigurations, licences; fails on HIGH or CRITICAL), CodeQL static analysis. Trivy and CodeQL results appear under the repository's **Security → Code scanning** tab |
-| `release.yml` | a tag like `v0.2.0` | Checks the tag matches the manifest version, reruns CI, then publishes a GitHub release with the package, a CycloneDX SBOM, `SHA256SUMS`, and signed build-provenance and SBOM attestations |
+| `release.yml` | a tag like `v0.2.0` | Checks the tag matches the manifest version, reruns CI, then publishes a GitHub release with the package, a CycloneDX SBOM, `SHA256SUMS`, a keyless cosign signature, and signed build-provenance and SBOM attestations |
 
-To cut a release, bump `version` in `src/manifest.json`, commit, then `git tag v<version> && git push --tags`. Anyone can verify a downloaded package with `gh attestation verify <file>.zip --repo ortizjeronimo/linkedin-attachment-scanner`.
+To cut a release, bump `version` in `src/manifest.json`, commit, then `git tag v<version> && git push --tags`. Anyone can verify a downloaded package with `gh attestation verify <file>.zip --repo ortizjeronimo/linkedin-attachment-scanner`, or with `cosign verify-blob` as shown in [SECURITY.md](SECURITY.md).
 
-Signing with Mozilla is opt-in: set the repository variable `AMO_SIGN=true` and the secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET`, and the release also gets a signed `.xpi`.
+Submitting to addons.mozilla.org is opt-in: set the repository variable `AMO_SIGN=true` and the secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET`, and each release is also uploaded to the add-on's listing for Mozilla to sign and publish. The first version has to be submitted by hand on the site.
 
 Dependabot (`.github/dependabot.yml`) opens weekly pull requests to keep the actions up to date.
 
