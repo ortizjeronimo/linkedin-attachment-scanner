@@ -23,7 +23,7 @@
       "bom-ref": "bbedf4ee-6caf-46bd-8fb6-23b629aabf3f",
       "type": "application",
       "name": "linkedin-attachment-scanner",
-      "version": "0.2.0",
+      "version": "0.2.1",
       "properties": [
         {
           "name": "aquasecurity:trivy:SchemaVersion",

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Attachment Scanner",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Checks files sent in LinkedIn chats for macros, scripts, disguised executables and other red flags before you open them.",
   "browser_specific_settings": {
     "gecko": {
