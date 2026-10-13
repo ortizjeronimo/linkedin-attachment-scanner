@@ -263,19 +263,39 @@
     document.removeEventListener("keydown", onKey, true);
   }
 
-  async function save(a) {
+  // The background keeps a scanned file for 30 minutes. After that the status line still shows the
+  // old verdict, so scan again; returns false if the new verdict needs the user to look first.
+  async function rescanExpired(a) {
+    const e = cards.get(a);
+    const before = e.state;
+    await startScan(a, true);
+    if (e.state === before) return true;
+    if (dialogFor === a) closeDialog();
+    showResultDialog(a);
+    return false;
+  }
+
+  async function save(a, retried) {
     const e = cards.get(a);
     const s = await browser.runtime.sendMessage({ type: "save", scanId: e.scanId });
+    if (s.expired && !retried) {
+      if (await rescanExpired(a)) return save(a, true);
+      return;
+    }
     if (dialogFor === a) closeDialog();
     if (s.error) toast("Download failed", s.error, "suspicious");
     else toast(e.result.filename, e.state === "clean" ? "Scanned and saved \u00b7 no threats found" : "Saved to your Downloads", e.state);
   }
 
-  async function openInDrive(a) {
+  async function openInDrive(a, retried) {
     const e = cards.get(a);
     if (dialogFor === a) closeDialog();
     toast(e.result.filename, "Uploading to Google Drive…");
     const r = await browser.runtime.sendMessage({ type: "openInDrive", scanId: e.scanId }).catch((err) => ({ error: err.message }));
+    if (r.expired && !retried) {
+      if (await rescanExpired(a)) return openInDrive(a, true);
+      return;
+    }
     if (r.error) toast("Couldn't open in Google Drive", r.error, "suspicious");
     else toast(e.result.filename, "Opened in Google Drive · not saved to this computer", e.state);
   }

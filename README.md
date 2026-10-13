@@ -104,6 +104,7 @@ Dependabot (`.github/dependabot.yml`) opens weekly pull requests to keep the act
 - LinkedIn's current attachment card is a button with no file address, so those attachments are scanned when you click **Download** or **Scan now** instead of automatically. To scan one, the extension lets LinkedIn start the download, cancels it, and scans its own copy.
 - This is a heuristic scanner, not antivirus. A file with no red flags can still be malicious, especially with VirusTotal off or for a brand-new file.
 - Contents of RAR and 7z archives and encrypted files can't be inspected.
+- A file opened with **Open in Google Drive** is stored in your Drive. If you run Google Drive for desktop with syncing on, it can be copied back to your computer, so delete files you don't trust from Drive once you've looked at them.
 
 ## Contributing
 
