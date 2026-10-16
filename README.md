@@ -4,6 +4,10 @@
 [![Security](https://github.com/ortizjeronimo/linkedin-attachment-scanner/actions/workflows/security.yml/badge.svg)](https://github.com/ortizjeronimo/linkedin-attachment-scanner/actions/workflows/security.yml)
 [![Release](https://img.shields.io/github/v/release/ortizjeronimo/linkedin-attachment-scanner)](https://github.com/ortizjeronimo/linkedin-attachment-scanner/releases/latest)
 [![License: MIT](https://img.shields.io/github/license/ortizjeronimo/linkedin-attachment-scanner)](LICENSE)
+[![Firefox Add-on](https://img.shields.io/amo/v/linkedin-attachment-scanner?label=Firefox%20Add-on)](https://addons.mozilla.org/en-US/firefox/addon/linkedin-attachment-scanner/)
+[![Users](https://img.shields.io/amo/users/linkedin-attachment-scanner)](https://addons.mozilla.org/en-US/firefox/addon/linkedin-attachment-scanner/)
+
+**[Install from Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/linkedin-attachment-scanner/)** (Firefox 140 or newer)
 
 Checks files sent to you in LinkedIn messages **before** they reach your Downloads folder.
 
@@ -27,14 +31,18 @@ Checks files sent to you in LinkedIn messages **before** they reach your Downloa
 | Archives | Password protection, executables inside, nested archives, one level of nested Office files. RAR/7z are flagged as not inspectable. |
 | HTML/SVG | Scripts, HTML smuggling, password fields, forms posting elsewhere |
 
-## Install (for testing)
+## Install
+
+Install it from [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/linkedin-attachment-scanner/). Updates arrive automatically.
+
+### From source (for development)
 
 1. Clone or download this repository.
 2. Open `about:debugging#/runtime/this-firefox` in Firefox 140 or newer.
 3. Click **Load Temporary Add-on…** and pick `src/manifest.json`.
 4. Open LinkedIn messaging and click an attachment.
 
-Temporary add-ons are removed when Firefox restarts. To install permanently, sign it for free as an unlisted add-on at https://addons.mozilla.org/developers/ (`npx web-ext sign --source-dir src --channel=unlisted`), then install the signed `.xpi`.
+Temporary add-ons are removed when Firefox restarts. For a permanent install, use the Firefox Add-ons version above.
 
 Click the toolbar icon to open settings (VirusTotal key, safety-net options).
 
