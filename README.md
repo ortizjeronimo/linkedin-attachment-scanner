@@ -22,7 +22,7 @@ The extension's status line, dialogs and popup are shown as they really render. 
 
 ## What it does
 
-- **In chats:** every attachment is scanned automatically as soon as it appears, and a status line under the card shows the result: *No threats found*, *Review before opening*, or *Dangerous file*. Clean files download with one click as usual; anything else opens a details dialog first.
+- **In chats:** a status line under each attachment shows the result: *No threats found*, *Review before opening*, or *Dangerous file*. Clean files download with one click as usual; anything else opens a details dialog first. Attachments LinkedIn shows as plain links are scanned as soon as they appear. Its current download-button cards are scanned when you click **Download** or **Scan now**, because LinkedIn only reveals the file at that point.
 - **Toolbar popup:** lists recent scans and has an on/off switch for automatic scanning.
 - **Safety net:** any other download coming from linkedin.com or licdn.com is paused and scanned. Dangerous files are cancelled and explained in a new tab. If a small file finished before the scan, you're offered to delete it.
 - **Open in Google Drive (optional):** view an attachment in Google's online viewer instead of opening it on your computer. See [setup](#open-in-google-drive) below.
@@ -122,6 +122,10 @@ Actions are pinned to full commit hashes, with the version in a trailing comment
 - This is a heuristic scanner, not antivirus. A file with no red flags can still be malicious, especially with VirusTotal off or for a brand-new file.
 - Contents of RAR and 7z archives and encrypted files can't be inspected.
 - A file opened with **Open in Google Drive** is stored in your Drive. If you run Google Drive for desktop with syncing on, it can be copied back to your computer, so delete files you don't trust from Drive once you've looked at them.
+
+## Changelog
+
+Release notes for every version are in [CHANGELOG.md](CHANGELOG.md).
 
 ## Contributing
 
