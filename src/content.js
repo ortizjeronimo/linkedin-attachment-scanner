@@ -6,7 +6,7 @@
   // message, so a link only counts as an attachment by its path (or by sitting in an attachment card),
   // never by its query string: otherwise a sender could make the extension fetch any LinkedIn URL
   // with the user's cookies.
-  const ATTACHMENT_PATH = /^\/(dms|dms-uploads|ambry)\/|messaging-attachments/i;
+  const ATTACHMENT_PATH = /^(?:\/(?:dms|dms-uploads|ambry)\/|.*messaging-attachments)/i;
   const IMAGE_HREF = /\.(png|jpe?g|gif|webp)(\?|$)|\/image\//i;
   const LI_HOST = /(^|\.)(linkedin\.com|licdn\.com)$/i;
   // LinkedIn's newer attachment card: a button with no URL; its script starts the download on click.
