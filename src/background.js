@@ -290,13 +290,13 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     case "settings":
       return getSettings().then(({ autoScan, driveClientId }) => ({ autoScan, drive: !!driveClientId }));
     case "openInDrive":
-      return openInDrive(msg.scanId).then((link) => ({ ok: true, link })).catch((e) => ({ error: e.message }));
+      return openInDrive(msg.scanId).then((link) => ({ ok: true, link })).catch((e) => ({ error: e.message, expired: !pending.has(msg.scanId) }));
     case "getHistory":
       return browser.storage.local.get({ history: [] });
     case "clearHistory":
       return browser.storage.local.set({ history: [] }).then(() => ({ ok: true }));
     case "save":
-      return saveScanned(msg.scanId).then((id) => ({ ok: true, id })).catch((e) => ({ error: e.message }));
+      return saveScanned(msg.scanId).then((id) => ({ ok: true, id })).catch((e) => ({ error: e.message, expired: !pending.has(msg.scanId) }));
     case "discard":
       // Scans stay cached (and expire after 30 minutes) so the inline status stays accurate.
       return Promise.resolve({ ok: true });

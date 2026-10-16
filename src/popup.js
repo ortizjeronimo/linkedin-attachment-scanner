@@ -43,7 +43,10 @@ async function render() {
   const t = document.getElementById("autoScan");
   t.checked = s.autoScan;
   t.addEventListener("change", () => browser.storage.local.set({ autoScan: t.checked }));
-  document.getElementById("vt").textContent = s.vtApiKey ? "VirusTotal lookup on" : "VirusTotal lookup off";
+  // A saved key only counts once the user has allowed the data sharing it needs (see getSettings in background.js).
+  const perms = await browser.permissions.getAll();
+  const vtOn = s.vtApiKey && (!perms.data_collection || perms.data_collection.includes("websiteContent"));
+  document.getElementById("vt").textContent = vtOn ? "VirusTotal lookup on" : "VirusTotal lookup off";
   document.getElementById("settings").addEventListener("click", () => { browser.runtime.openOptionsPage(); window.close(); });
   document.getElementById("clear").addEventListener("click", async () => { await browser.storage.local.set({ history: [] }); render(); });
   render();
