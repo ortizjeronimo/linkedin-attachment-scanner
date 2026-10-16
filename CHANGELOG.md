@@ -2,7 +2,7 @@
 
 All notable changes to this extension. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and versions follow [Semantic Versioning](https://semver.org/).
 
-## [0.2.3] - Unreleased
+## [0.2.3] - 2026-10-15
 
 ### Added
 - VirusTotal results now include what the file did in VirusTotal's sandboxes: sandbox verdicts, Sigma behaviour rules, community YARA matches and network alerts. A sandbox calling the file malicious, a high or critical Sigma match, a YARA match or a high-severity network alert marks the file for review; lower-severity matches are shown as information.
@@ -61,7 +61,7 @@ First public release.
 - Optional Open in Google Drive, to view a file in Google's viewer instead of on the computer.
 - CI, security scanning (Gitleaks, Trivy, CodeQL), and signed releases with SBOM and build provenance.
 
-[0.2.3]: https://github.com/ortizjeronimo/linkedin-attachment-scanner/compare/v0.2.2...main
+[0.2.3]: https://github.com/ortizjeronimo/linkedin-attachment-scanner/compare/v0.2.2...v0.2.3
 [0.2.2]: https://github.com/ortizjeronimo/linkedin-attachment-scanner/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/ortizjeronimo/linkedin-attachment-scanner/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/ortizjeronimo/linkedin-attachment-scanner/releases/tag/v0.2.0
