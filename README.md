@@ -7,6 +7,15 @@
 
 Checks files sent to you in LinkedIn messages **before** they reach your Downloads folder.
 
+## Screenshots
+
+| | |
+|---|---|
+| ![A dangerous document is stopped and explained](store/screenshots/1-dangerous.png) | ![A clean file gets a status line and downloads as usual](store/screenshots/2-clean.png) |
+| ![An encrypted PDF is flagged for review](store/screenshots/3-review.png) | ![The toolbar popup lists recent scans](store/screenshots/4-popup.png) |
+
+The extension's status line, dialogs and popup are shown as they really render. The conversation around them is a neutral stand-in with invented names, not a capture of LinkedIn.
+
 ## What it does
 
 - **In chats:** every attachment is scanned automatically as soon as it appears, and a status line under the card shows the result: *No threats found*, *Review before opening*, or *Dangerous file*. Clean files download with one click as usual; anything else opens a details dialog first.
