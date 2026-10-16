@@ -79,10 +79,63 @@ async function virusTotalLookup(sha256, apiKey) {
       suspicious: st.suspicious || 0,
       total: Object.values(st).reduce((x, y) => x + y, 0),
       label: (a.popular_threat_classification && a.popular_threat_classification.suggested_threat_label) || "",
-      link: `https://www.virustotal.com/gui/file/${sha256}`
+      link: `https://www.virustotal.com/gui/file/${sha256}`,
+      ...behaviourOf(a)
     };
   } catch (e) {
     return { error: "Could not reach VirusTotal: " + e.message };
+  }
+}
+
+// Sandbox and community-rule results from the same file report. They describe what the file did
+// when VirusTotal opened it, which the antivirus engine count doesn't capture.
+function behaviourOf(a) {
+  const sandboxes = Object.values(a.sandbox_verdicts || {})
+    .filter((v) => v && (v.category === "malicious" || v.category === "suspicious"))
+    .map((v) => ({ name: v.sandbox_name || "A sandbox", category: v.category, families: v.malware_names || [] }));
+  const s = a.sigma_analysis_stats || {};
+  const sigma = { critical: s.critical || 0, high: s.high || 0, medium: s.medium || 0, low: s.low || 0,
+    rules: (a.sigma_analysis_results || []).map((r) => r.rule_title).filter(Boolean) };
+  const yara = (a.crowdsourced_yara_results || []).filter((r) => r.rule_name)
+    .map((r) => r.rule_name + (r.ruleset_name || r.source ? ` (${r.ruleset_name || r.source})` : ""));
+  const i = a.crowdsourced_ids_stats || {};
+  return { sandboxes, sigma, yara, ids: { high: i.high || 0, medium: i.medium || 0, low: i.low || 0 } };
+}
+
+function addBehaviour(result, vt) {
+  const warn = (title, detail) => { result.findings.push({ level: "warning", title, detail }); if (result.verdict === "clean") result.verdict = "caution"; };
+  const info = (title, detail) => result.findings.push({ level: "info", title, detail });
+  const list = (items) => items.slice(0, 4).join("; ") + (items.length > 4 ? `; and ${items.length - 4} more` : "");
+  const plural = (n, word, many) => `${n} ${n === 1 ? word : many || word + "s"}`;
+
+  const malicious = vt.sandboxes.filter((x) => x.category === "malicious");
+  const suspicious = vt.sandboxes.filter((x) => x.category === "suspicious");
+  if (malicious.length) {
+    warn(`VirusTotal sandbox: ${plural(malicious.length, "sandbox", "sandboxes")} ${malicious.length === 1 ? "calls" : "call"} this file malicious`,
+      list(malicious.map((x) => x.name + (x.families.length ? ` (${x.families.join(", ")})` : ""))) +
+      ". The file behaved maliciously when opened in a test environment, even if no antivirus engine flags it yet.");
+  } else if (suspicious.length) {
+    info(`VirusTotal sandbox: ${plural(suspicious.length, "sandbox", "sandboxes")} ${suspicious.length === 1 ? "considers" : "consider"} this file suspicious`, list(suspicious.map((x) => x.name)) + ".");
+  }
+
+  const sg = vt.sigma;
+  const counts = ["critical", "high", "medium", "low"].filter((k) => sg[k]).map((k) => `${sg[k]} ${k}`).join(", ");
+  if (counts) {
+    const rules = sg.rules.length ? " Rules: " + list(sg.rules) + "." : "";
+    if (sg.critical || sg.high) {
+      warn(`VirusTotal behaviour rules: ${counts}`, "Community detection rules matched what the file did when opened in a sandbox." + rules);
+    } else {
+      info(`VirusTotal behaviour rules: ${counts}`,
+        "Low and medium matches are common for ordinary Office documents, for example Word creating its default template or contacting Microsoft. Check the Behavior tab on VirusTotal if unsure." + rules);
+    }
+  }
+
+  if (vt.yara.length) warn(`VirusTotal: ${plural(vt.yara.length, "community YARA rule")} ${vt.yara.length === 1 ? "matches" : "match"} this file`, list(vt.yara) + ".");
+
+  if (vt.ids.high) {
+    warn(`VirusTotal: ${plural(vt.ids.high, "high-severity network alert")}`, "Intrusion-detection rules flagged network traffic the file produced in a sandbox.");
+  } else if (vt.ids.medium || vt.ids.low) {
+    info("VirusTotal: network alerts in the sandbox", `${vt.ids.medium} medium and ${vt.ids.low} low severity. These are often triggered by ordinary traffic.`);
   }
 }
 
@@ -104,6 +157,9 @@ function mergeVirusTotal(result, vt) {
   } else {
     result.findings.push({ level: "info", title: `VirusTotal: 0/${vt.total} detections`, detail: "This exact file is known and no engine flags it." });
   }
+  if (vt.known && vt.sigma) addBehaviour(result, vt);
+  const rank = { danger: 3, warning: 2, info: 1 };
+  result.findings.sort((x, y) => rank[y.level] - rank[x.level]);
   return result;
 }
 
@@ -112,7 +168,13 @@ function mergeVirusTotal(result, vt) {
 // URLs change their query string, so results are cached by origin + path.
 const scanCache = new Map(); // key -> Promise<{scanId, result}>
 const vtCache = new Map();   // sha256 -> VirusTotal result
-const urlKey = (u) => { try { const x = new URL(u); return x.origin + x.pathname; } catch (_) { return u; } };
+// LinkedIn's signed attachment links change their query string between renders, but their path
+// already identifies the file, so those are cached by path. Anything else is cached by its full
+// address, so two different files can never share a verdict.
+const ATTACHMENT_PATH = /^\/(dms|dms-uploads|ambry)\//i;
+const urlKey = (u) => {
+  try { const x = new URL(u); return ATTACHMENT_PATH.test(x.pathname) ? x.origin + x.pathname : x.href; } catch (_) { return u; }
+};
 
 let active = 0;
 const waiting = [];
@@ -253,7 +315,7 @@ const captures = new Map(); // token -> { name, key, claimed, promise, resolve }
 function expectDownload(filename) {
   const token = newId();
   const name = (filename || "").trim();
-  const c = { name, key: name.toLowerCase(), claimed: false };
+  const c = { name, key: nameKey(name), claimed: false };
   c.promise = new Promise((r) => { c.resolve = r; });
   captures.set(token, c);
   setTimeout(() => { if (!c.claimed) { c.claimed = true; c.resolve({ error: "LinkedIn didn't start a download for this file." }); } }, 15000);
@@ -261,10 +323,17 @@ function expectDownload(filename) {
   return token;
 }
 
+// Compares file names loosely: case, punctuation and the " (1)" Firefox adds to duplicates differ
+// between what the card shows and what lands in the download.
+const nameKey = (n) => (n || "").split(/[\\/]/).pop().toLowerCase().replace(/\s*\(\d+\)(?=\.[^.]+$)/, "").replace(/[^a-z0-9.]/g, "");
+
+// Matches a download to the card that asked for it by file name. Timing alone isn't enough: another
+// LinkedIn download starting at the same moment would be credited to the wrong card. Only when the
+// download's name isn't known yet, and exactly one card is waiting, is it matched without a name.
 function claimCapture(item) {
-  const name = (item.filename || "").split(/[\\/]/).pop().toLowerCase();
+  const name = nameKey(item.filename);
   const open = [...captures.values()].filter((c) => !c.claimed);
-  const c = open.find((x) => x.key && x.key === name) || open[0];
+  const c = name ? open.find((x) => x.key && x.key === name) : (open.length === 1 ? open[0] : null);
   if (c) c.claimed = true;
   return c || null;
 }
