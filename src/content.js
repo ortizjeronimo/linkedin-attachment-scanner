@@ -248,6 +248,7 @@
     const shadow = overlay.attachShadow({ mode: "closed" });
     const style = document.createElement("style");
     style.textContent = LASRender.CSS;
+    LASRender.setDark(isDark());
     const slot = document.createElement("div");
     shadow.append(style, slot);
     overlay.addEventListener("click", (ev) => { if (ev.target === overlay) closeDialog(); });

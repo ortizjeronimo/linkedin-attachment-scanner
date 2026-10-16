@@ -3,6 +3,7 @@
 (async () => {
   const style = document.createElement("style");
   style.textContent = LASRender.CSS;
+  LASRender.setDark(matchMedia("(prefers-color-scheme: dark)").matches);
   document.head.append(style);
 
   const slot = document.getElementById("slot");
