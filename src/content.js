@@ -2,7 +2,11 @@
 "use strict";
 
 (() => {
-  const ATTACHMENT_HREF = /\/dms\/|\/dms-uploads\/|messaging-attachments|\/ambry\/|\/document\/|\/attachment|[?&]download/i;
+  // Paths where LinkedIn serves files sent in messages. Anyone can paste a linkedin.com link into a
+  // message, so a link only counts as an attachment by its path (or by sitting in an attachment card),
+  // never by its query string: otherwise a sender could make the extension fetch any LinkedIn URL
+  // with the user's cookies.
+  const ATTACHMENT_PATH = /^\/(dms|dms-uploads|ambry)\/|messaging-attachments/i;
   const IMAGE_HREF = /\.(png|jpe?g|gif|webp)(\?|$)|\/image\//i;
   const LI_HOST = /(^|\.)(linkedin\.com|licdn\.com)$/i;
   // LinkedIn's newer attachment card: a button with no URL; its script starts the download on click.
@@ -43,7 +47,7 @@
     const cls = (a.className && a.className.baseVal !== undefined ? a.className.baseVal : a.className) || "";
     const containerHint = /attachment|file/i.test(cls) || !!a.closest('[class*="attachment"], [class*="file-"]') ||
       !!a.querySelector('[class*="attachment"]');
-    const looksLikeFile = a.hasAttribute("download") || ATTACHMENT_HREF.test(a.href);
+    const looksLikeFile = a.hasAttribute("download") || ATTACHMENT_PATH.test(pathOf(a.href));
     if (!looksLikeFile && !containerHint) return false;
     const onlyImage = a.querySelector("img") && !a.textContent.trim();
     if (onlyImage && IMAGE_HREF.test(a.href)) return false;

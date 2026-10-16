@@ -16,7 +16,7 @@ With Node.js installed you can also use `npx web-ext run --source-dir src`, whic
 ## Before you open a pull request
 
 - Run `npx web-ext lint --source-dir src` and fix anything it reports. CI runs the same check and treats warnings as errors.
-- Run `node test/analyzer.test.js`. If you change a detection rule, add a crafted file to that test with the verdict it should get.
+- Run `node test/analyzer.test.js` and `node test/background.test.js`. If you change a detection rule, add a crafted file to the analyzer test with the verdict it should get.
 - Test the change in Firefox against a real LinkedIn conversation with an attachment. The browser-side code has no automated tests.
 - Keep the code dependency-free. If a change really needs a third-party library, say why in the pull request and regenerate the SBOM (below).
 - Build UI with `textContent` and DOM APIs, never `innerHTML`. Filenames and file contents are attacker-controlled.

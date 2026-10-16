@@ -61,6 +61,8 @@ jobs:
           node-version: ${{ matrix.node }}
       - name: Analyzer checks
         run: node test/analyzer.test.js
+      - name: Background logic checks
+        run: node test/background.test.js
 
   build:
     name: Build

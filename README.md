@@ -97,6 +97,7 @@ The analyzer has a test file of crafted documents, each with the verdict it must
 
 ```
 node test/analyzer.test.js
+node test/background.test.js
 ```
 
 ## CI/CD
