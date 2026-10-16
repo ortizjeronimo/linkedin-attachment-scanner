@@ -51,6 +51,8 @@ docker run --rm -v "${PWD}:/src" -w /src aquasec/trivy:latest fs --format cyclon
 
 Trivy names the top-level component `.`; after regenerating, set `metadata.component.name` back to `linkedin-attachment-scanner` and `version` to the manifest version.
 
+For an ordinary version bump there is nothing to regenerate: `scripts/set-version.sh <version>` updates the manifest and the SBOM together, and CI fails if the two versions differ.
+
 ## Reporting a vulnerability
 
 If you find a way to make the scanner report a dangerous file as clean, or a security problem in the extension itself, please report it privately through the repository's **Security → Report a vulnerability** page instead of opening a public issue.

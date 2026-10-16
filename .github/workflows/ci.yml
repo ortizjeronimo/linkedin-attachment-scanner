@@ -24,8 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
       - name: Syntax check
@@ -35,6 +35,14 @@ jobs:
           done
       - name: Validate manifest
         run: jq -e '.manifest_version == 3 and (.version | test("^[0-9]+[.][0-9]+[.][0-9]+$"))' src/manifest.json
+      - name: SBOM version matches manifest
+        run: |
+          manifest="$(jq -r .version src/manifest.json)"
+          sbom="$(jq -r .metadata.component.version sbom.cdx.json)"
+          if [ "$manifest" != "$sbom" ]; then
+            echo "::error file=sbom.cdx.json::SBOM version ${sbom} does not match manifest version ${manifest}. Run scripts/set-version.sh ${manifest}"
+            exit 1
+          fi
       - name: web-ext lint
         run: npx --yes "web-ext@${WEB_EXT_VERSION}" lint --source-dir src --warnings-as-errors
 
@@ -47,8 +55,8 @@ jobs:
       matrix:
         node: [20, 22, 24]
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
       - name: Analyzer checks
@@ -60,15 +68,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
       - name: Package extension
         run: npx --yes "web-ext@${WEB_EXT_VERSION}" build --source-dir src --artifacts-dir dist
       - name: Checksum
         run: cd dist && sha256sum -- *.zip | tee -a "$GITHUB_STEP_SUMMARY"
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: extension
           path: dist/*.zip

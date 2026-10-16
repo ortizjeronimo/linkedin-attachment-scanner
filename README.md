@@ -92,11 +92,11 @@ Three GitHub Actions workflows live in `.github/workflows/`:
 | `security.yml` | every push and pull request, and weekly | Gitleaks over the full git history, Trivy (dependencies, secrets, misconfigurations, licences; fails on HIGH or CRITICAL), CodeQL static analysis. Trivy and CodeQL results appear under the repository's **Security → Code scanning** tab |
 | `release.yml` | a tag like `v0.2.0` | Checks the tag matches the manifest version, reruns CI, then publishes a GitHub release with the package, a CycloneDX SBOM, `SHA256SUMS`, a keyless cosign signature, and signed build-provenance and SBOM attestations |
 
-To cut a release, bump `version` in `src/manifest.json`, commit, then `git tag v<version> && git push --tags`. Anyone can verify a downloaded package with `gh attestation verify <file>.zip --repo ortizjeronimo/linkedin-attachment-scanner`, or with `cosign verify-blob` as shown in [SECURITY.md](SECURITY.md).
+To cut a release, run `scripts/set-version.sh <version>` (it updates `src/manifest.json` and `sbom.cdx.json` together; CI fails if they differ), merge that through a pull request, then `git tag v<version> && git push origin v<version>`. Anyone can verify a downloaded package with `gh attestation verify <file>.zip --repo ortizjeronimo/linkedin-attachment-scanner`, or with `cosign verify-blob` as shown in [SECURITY.md](SECURITY.md).
 
-Submitting to addons.mozilla.org is opt-in: set the repository variable `AMO_SIGN=true` and the secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET`, and each release is also uploaded to the add-on's listing for Mozilla to sign and publish. The first version has to be submitted by hand on the site.
+Submitting to addons.mozilla.org is opt-in: set the repository variable `AMO_SIGN=true` and put the secrets `AMO_JWT_ISSUER` and `AMO_JWT_SECRET` in a `mozilla` environment (with required reviewers and a `v*` tag rule), and each release is also uploaded, after approval, to the add-on's listing for Mozilla to sign and publish. The first version has to be submitted by hand on the site.
 
-Dependabot (`.github/dependabot.yml`) opens weekly pull requests to keep the actions up to date.
+Actions are pinned to full commit hashes, with the version in a trailing comment. Dependabot (`.github/dependabot.yml`) opens weekly pull requests that move both the hash and the comment.
 
 ## Limitations
 
